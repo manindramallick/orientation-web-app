@@ -116,19 +116,48 @@
       });
     }
 
-    function detectOrientation() {
-      window.addEventListener('orientationchange', () => {
-        const angle = window.orientation;
-        if (angle === 0) orientation = 'portrait-up';
-        else if (angle === 180) orientation = 'portrait-down';
-        else if (angle === 90) orientation = 'landscape';
-        else if (angle === -90) orientation = 'landscape-weather';
-        updateFeature();
+function detectOrientation() {
+  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+    // iOS 13+ requires permission
+    const button = document.createElement('button');
+    button.textContent = 'Enable Orientation';
+    button.onclick = () => {
+      DeviceOrientationEvent.requestPermission().then(response => {
+        if (response === 'granted') {
+          window.addEventListener('deviceorientation', handleOrientation);
+        }
       });
-    }
+      button.remove();
+    };
+    document.body.appendChild(button);
+  } else {
+    // Android and older iOS
+    window.addEventListener('deviceorientation', handleOrientation);
+  }
+}
+
+function handleOrientation(event) {
+  const gamma = event.gamma; // left-right tilt
+  const beta = event.beta;   // front-back tilt
+
+  if (beta > 45 && beta < 135) {
+    orientation = 'portrait-up';
+  } else if (beta < -45 && beta > -135) {
+    orientation = 'portrait-down';
+  } else if (gamma > 45) {
+    orientation = 'landscape';
+  } else if (gamma < -45) {
+    orientation = 'landscape-weather';
+  } else {
+    orientation = '';
+  }
+
+  updateFeature();
+}
+
 
     detectOrientation();
-    updateFeature();
+    //updateFeature();
   </script>
 </body>
 </html>
