@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orientation-Based App</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+      background: #f0f0f0;
+    }
+    .container {
+      padding: 20px;
+    }
+    .feature {
+      font-size: 1.5em;
+      margin: 20px 0;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1em;
+      margin: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📱 Orientation-Based Features</h1>
+    <div id="feature" class="feature">Rotate your device to begin...</div>
+    <div id="controls"></div>
+    <div id="weather"></div>
+  </div>
+  <script>
+    let orientation = '';
+    let timerInterval, stopwatchInterval;
+    let stopwatchTime = 0;
+
+    function updateFeature() {
+      const featureEl = document.getElementById('feature');
+      const controlsEl = document.getElementById('controls');
+      const weatherEl = document.getElementById('weather');
+      controlsEl.innerHTML = '';
+      weatherEl.innerHTML = '';
+
+      switch (orientation) {
+        case 'portrait-up':
+          featureEl.textContent = '⏰ Alarm Clock';
+          controlsEl.innerHTML = '<input type="time" id="alarmTime" /><button onclick="setAlarm()">Set Alarm</button>';
+          break;
+        case 'landscape':
+          featureEl.textContent = '⏱ Stopwatch';
+          controlsEl.innerHTML = '<div id="stopwatch">0s</div><button onclick="startStopwatch()">Start</button><button onclick="stopStopwatch()">Stop</button>';
+          break;
+        case 'portrait-down':
+          featureEl.textContent = '⏳ Timer';
+          controlsEl.innerHTML = '<input type="number" id="timerSeconds" placeholder="Seconds" /><button onclick="startTimer()">Start Timer</button>';
+          break;
+        case 'landscape-weather':
+          featureEl.textContent = '🌤 Weather of the Day';
+          fetchWeather();
+          break;
+        default:
+          featureEl.textContent = 'Rotate your device to begin...';
+      }
+    }
+
+    function setAlarm() {
+      const time = document.getElementById('alarmTime').value;
+      alert(`Alarm set for ${time}`);
+    }
+
+    function startStopwatch() {
+      stopwatchTime = 0;
+      stopwatchInterval = setInterval(() => {
+        stopwatchTime++;
+        document.getElementById('stopwatch').textContent = `${stopwatchTime}s`;
+      }, 1000);
+    }
+
+    function stopStopwatch() {
+      clearInterval(stopwatchInterval);
+    }
+
+    function startTimer() {
+      let seconds = parseInt(document.getElementById('timerSeconds').value);
+      const timerDisplay = document.createElement('div');
+      timerDisplay.id = 'timerDisplay';
+      document.getElementById('controls').appendChild(timerDisplay);
+      timerInterval = setInterval(() => {
+        if (seconds <= 0) {
+          clearInterval(timerInterval);
+          alert('Timer done!');
+        } else {
+          timerDisplay.textContent = `${seconds--}s remaining`;
+        }
+      }, 1000);
+    }
+
+    function fetchWeather() {
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`)
+          .then(res => res.json())
+          .then(data => {
+            const weather = data.current_weather;
+            document.getElementById('weather').innerHTML = `
+              <p>Temperature: ${weather.temperature}°C</p>
+              <p>Wind Speed: ${weather.windspeed} km/h</p>
+              <p>Condition: ${weather.weathercode}</p>
+            `;
+          });
+      });
+    }
+
+    function detectOrientation() {
+      window.addEventListener('orientationchange', () => {
+        const angle = window.orientation;
+        if (angle === 0) orientation = 'portrait-up';
+        else if (angle === 180) orientation = 'portrait-down';
+        else if (angle === 90) orientation = 'landscape';
+        else if (angle === -90) orientation = 'landscape-weather';
+        updateFeature();
+      });
+    }
+
+    detectOrientation();
+    updateFeature();
+  </script>
+</body>
+</html>
